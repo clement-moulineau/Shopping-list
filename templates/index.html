@@ -1,0 +1,263 @@
+{% macro ingredient_picker(groups, picker_id) -%}
+  <div class="common-ingredient-picker" lang="fr">
+    <label for="common-ingredient-search-{{ picker_id }}">Ingrédients courants</label>
+    <input id="common-ingredient-search-{{ picker_id }}" class="common-ingredient-search"
+           type="search" placeholder="Rechercher un ingrédient…" autocomplete="off">
+    <div class="common-ingredient-groups">
+      {% for group_name, ingredients in groups %}
+        <section class="common-ingredient-group" aria-label="{{ group_name }}">
+          <h4>{{ group_name }}</h4>
+          <div class="common-ingredient-grid">
+            {% for ingredient in ingredients %}
+              <button class="common-ingredient-option" type="button"
+                      data-ingredient="{{ ingredient.name }}"
+                      data-quantity="{{ ingredient.default_quantity }}"
+                      data-unit="{{ ingredient.default_unit }}"
+                      data-entry="{{ ingredient.entry_text }}"
+                      aria-label="Ajouter {{ ingredient.name }}">
+                {% if ingredient.image_url %}
+                  <img class="ingredient-image" src="{{ ingredient.image_url }}" alt="" loading="lazy">
+                {% else %}
+                  <span class="ingredient-icon" aria-hidden="true">{{ ingredient.icon }}</span>
+                {% endif %}
+                <span>{{ ingredient.name }}</span>
+              </button>
+            {% endfor %}
+          </div>
+        </section>
+      {% endfor %}
+    </div>
+    <p class="common-ingredient-status" aria-live="polite"></p>
+    <p class="form-hint">La quantité et l’unité par défaut sont insérées dans la recette. Vous pouvez les modifier ensuite.</p>
+  </div>
+{%- endmacro %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>L'appliste de courses</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  </head>
+  <body>
+    <header class="topbar">
+      <a class="brand" href="{{ url_for('index') }}">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M5 11h14l-1.5 9h-11L5 11Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+            <path d="M3.5 11h17M8 11l1 9m7-9-1 9M8 8c0-2 1.4-3.5 3.2-4.5M16 8c0-2-1.4-3.5-3.2-4.5M12 8c0-2 1.1-3.8 2.8-5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+          </svg>
+        </span>
+        L'appliste
+      </a>
+      <span class="topbar-note">Vive les courses</span>
+    </header>
+
+    <main class="page">
+      <section class="intro">
+        <p class="eyebrow">LE REMPLISSEUR DE PLACARDS</p>
+        <h1>Régale toi<br>mon reuf.</h1>
+        <p class="intro-copy">Crée tes recettes préférées, on s'occupe de la liste.</p>
+        <div class="week-label"><span class="week-dot"></span> WEEK OF {{ week_start }}</div>
+      </section>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+          <div class="flash-stack" aria-live="polite">
+            {% for category, message in messages %}
+              <p class="flash {{ category }}">{{ message }}</p>
+            {% endfor %}
+          </div>
+        {% endif %}
+      {% endwith %}
+
+      <div class="workspace{% if not show_shopping_list %} planning-only{% endif %}">
+        <section class="panel recipes-panel">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">THE MENU</p>
+              <h2>Choose your recipes</h2>
+            </div>
+            <span class="count-pill">{{ recipes|length }} saved</span>
+          </div>
+          <p class="section-copy">Select what you’d like to cook this week.</p>
+
+          {% if recipes %}
+            <div class="recipe-list">
+              {% for recipe in recipes %}
+                <div class="recipe-entry">
+                  <label class="recipe-card">
+                    <input type="checkbox" name="recipe_ids" value="{{ recipe.id }}" form="plan-form"
+                           {% if recipe.id in selected_ids %}checked{% endif %}>
+                    <span class="custom-check" aria-hidden="true"></span>
+                    <span class="recipe-info">
+                      <strong>{{ recipe.name }}</strong>
+                      <span>{{ recipe.servings }} servings <span class="separator">·</span> {{ recipe.ingredient_count }} ingredients</span>
+                    </span>
+                    <span class="recipe-arrow" aria-hidden="true">↗</span>
+                  </label>
+                  <div class="recipe-serving-control">
+                    <label for="servings-{{ recipe.id }}">Servings to cook</label>
+                    <input id="servings-{{ recipe.id }}" name="servings_{{ recipe.id }}"
+                           type="number" min="1" step="1"
+                           value="{{ selected_servings.get(recipe.id, recipe.servings) }}"
+                           form="plan-form">
+                  </div>
+                  <details class="edit-recipe">
+                    <summary>Edit recipe</summary>
+                    <form action="{{ url_for('edit_recipe', recipe_id=recipe.id) }}" method="post" class="recipe-form">
+                      <label for="edit-name-{{ recipe.id }}">Recipe name</label>
+                      <input id="edit-name-{{ recipe.id }}" name="name" maxlength="100" value="{{ recipe.name }}" required>
+                      <label for="edit-servings-{{ recipe.id }}">Servings</label>
+                      <input id="edit-servings-{{ recipe.id }}" name="servings" type="number" min="1" value="{{ recipe.servings }}" required>
+                      <label for="edit-ingredients-{{ recipe.id }}">Ingredients <span class="label-hint">one per line</span></label>
+                      <textarea id="edit-ingredients-{{ recipe.id }}" name="ingredients" rows="5" required>{{ recipe.ingredient_text }}</textarea>
+                      {{ ingredient_picker(common_ingredients, 'edit-' ~ recipe.id) }}
+                      <p class="form-hint">One ingredient per line: <code>100g boeuf</code>, <code>1 poire</code>, <code>150ml lait</code>.</p>
+                      <button class="button button-light" type="submit">Save changes <span aria-hidden="true">→</span></button>
+                    </form>
+                    <form action="{{ url_for('delete_recipe', recipe_id=recipe.id) }}" method="post"
+                          class="delete-recipe-form" data-confirm="Delete {{ recipe.name }}? This cannot be undone.">
+                      <button class="button button-danger" type="submit">Delete recipe</button>
+                    </form>
+                  </details>
+                </div>
+              {% endfor %}
+            </div>
+            <form id="plan-form" action="{{ url_for('save_plan') }}" method="post">
+              <button class="button button-dark plan-button" type="submit">Update my week <span aria-hidden="true">→</span></button>
+            </form>
+          {% else %}
+            <div class="empty-note">
+              <span class="empty-icon">✳</span>
+              <strong>Your recipe box is waiting.</strong>
+              <span>Add your first recipe below to get started.</span>
+            </div>
+          {% endif %}
+
+          <details class="add-recipe">
+            <summary><span class="plus">+</span> Add a recipe</summary>
+            <form action="{{ url_for('add_recipe') }}" method="post" class="recipe-form">
+              <label for="recipe-name">Recipe name</label>
+              <input id="recipe-name" name="name" maxlength="100" placeholder="e.g. Lemon & herb pasta" required>
+              <label for="servings">Servings</label>
+              <input id="servings" name="servings" type="number" min="1" value="2" required>
+              <label for="ingredients">Ingredients <span class="label-hint">one per line</span></label>
+              <textarea id="ingredients" name="ingredients" rows="5" placeholder="100g boeuf&#10;1 poire&#10;150ml lait" required></textarea>
+              {{ ingredient_picker(common_ingredients, 'new') }}
+              <p class="form-hint">One ingredient per line: <code>100g boeuf</code>, <code>1 poire</code>, <code>150ml lait</code>.</p>
+              <button class="button button-light" type="submit">Save recipe <span aria-hidden="true">→</span></button>
+            </form>
+          </details>
+
+          <details class="add-ingredient">
+            <summary><span class="plus">+</span> Add an ingredient</summary>
+            <form action="{{ url_for('add_ingredient') }}" method="post" class="recipe-form"
+                  enctype="multipart/form-data">
+              <label for="ingredient-name">Ingredient name</label>
+              <input id="ingredient-name" name="name" maxlength="80" required>
+              <label for="ingredient-category">Category</label>
+              <input id="ingredient-category" name="category" maxlength="50"
+                     list="ingredient-category-options"
+                     placeholder="Choose or enter a category" required>
+              <datalist id="ingredient-category-options">
+                {% for category in ingredient_category_options %}
+                  <option value="{{ category }}">
+                {% endfor %}
+              </datalist>
+              <label for="ingredient-default-quantity">Default quantity</label>
+              <input id="ingredient-default-quantity" name="default_quantity"
+                     type="number" min="0.001" step="any" value="1" required>
+              <label for="ingredient-default-unit">Default unit <span class="label-hint">optional</span></label>
+              <input id="ingredient-default-unit" name="default_unit" maxlength="20"
+                     list="ingredient-unit-options"
+                     placeholder="Choose or enter a unit">
+              <datalist id="ingredient-unit-options">
+                {% for unit in ingredient_unit_options %}
+                  <option value="{{ unit }}">
+                {% endfor %}
+              </datalist>
+              <label for="ingredient-image">Image <span class="label-hint">optional; PNG, JPEG, GIF, or WebP, max 4 MB</span></label>
+              <input id="ingredient-image" name="image" type="file"
+                     accept="image/png,image/jpeg,image/gif,image/webp">
+              <button class="button button-light" type="submit">Save ingredient <span aria-hidden="true">→</span></button>
+            </form>
+          </details>
+        </section>
+
+        {% if show_shopping_list %}
+          <section class="panel shopping-panel" data-week-start="{{ week_start }}">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">READY WHEN YOU ARE</p>
+              <h2>Shopping list</h2>
+            </div>
+            <span class="count-pill">{{ shopping_item_count }} items</span>
+          </div>
+          <p class="section-copy">Ingredients combined across your selected recipes.</p>
+
+          <div class="shopping-actions">
+            <form class="shopping-sort-form" action="{{ url_for('index') }}" method="get">
+              <input type="hidden" name="show_list" value="1">
+              <label for="shopping-sort">Order by</label>
+              <select id="shopping-sort" name="sort">
+                <option value="name" {% if shopping_sort == 'name' %}selected{% endif %}>Name</option>
+                <option value="recipe" {% if shopping_sort == 'recipe' %}selected{% endif %}>Recipe</option>
+                <option value="category" {% if shopping_sort == 'category' %}selected{% endif %}>Category</option>
+              </select>
+              <button class="button button-light" type="submit">Apply</button>
+            </form>
+            {% if shopping_item_count %}
+              <div class="shopping-export-actions">
+                <button class="button button-light share-shopping-list" type="button">Share list</button>
+                <a class="button button-light download-shopping-list"
+                   href="{{ url_for('download_shopping_list') }}">Download .txt</a>
+              </div>
+            {% endif %}
+          </div>
+          <p class="shopping-share-status" aria-live="polite"></p>
+
+          {% if shopping_item_count %}
+            {% for group in shopping_groups %}
+              <section class="shopping-group">
+                {% if shopping_sort != 'name' %}
+                  <h3 class="shopping-group-heading">{{ group["name"] }}</h3>
+                {% endif %}
+                <ul class="shopping-list">
+                  {% for item in group["items"] %}
+                    <li class="{% if item.checked %}is-checked{% endif %}">
+                      <form action="{{ url_for('toggle_shopping_item', item_id=item.id) }}" method="post">
+                        <input type="hidden" name="sort" value="{{ shopping_sort }}">
+                        <button class="shopping-check" type="submit" aria-label="{% if item.checked %}Uncheck{% else %}Check off{% endif %} {{ item.name }}">
+                          {% if item.checked %}<span aria-hidden="true">✓</span>{% endif %}
+                        </button>
+                        <span class="item-name">{{ item.name }}</span>
+                        <span class="item-quantity">{{ item.quantity }}{% if item.unit %} {{ item.unit }}{% endif %}</span>
+                      </form>
+                    </li>
+                  {% endfor %}
+                </ul>
+              </section>
+            {% endfor %}
+            <p class="list-footnote">Same ingredients and units are automatically combined.</p>
+          {% else %}
+            <div class="empty-note shopping-empty">
+              <span class="empty-icon">✳</span>
+              <strong>A little room for inspiration.</strong>
+              <span>Choose recipes to build your shopping list.</span>
+            </div>
+          {% endif %}
+          <div class="list-footer">
+            <span>Made for your week</span><span class="footer-spark">✳</span>
+          </div>
+          </section>
+        {% endif %}
+      </div>
+      <footer>Plan a little. Eat a lot of good things.</footer>
+    </main>
+    <script src="{{ url_for('static', filename='ingredient-picker.js') }}" defer></script>
+  </body>
+</html>
