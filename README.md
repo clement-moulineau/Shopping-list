@@ -1,33 +1,33 @@
-# Weeknight grocery planner
+# Planificateur de courses de la semaine
 
-A small Flask app for saving recipes, choosing what to cook this week, setting servings per recipe, and building a combined grocery list. Ingredient quantities scale to the selected servings; matching ingredient names and units are added together, and shopping items can be checked off.
+Une petite application Flask pour enregistrer des recettes, choisir ce qu’on va cuisiner cette semaine, définir le nombre de portions par recette et générer une liste de courses combinée. Les quantités d’ingrédients sont mises à l’échelle selon les portions sélectionnées ; les noms et unités d’ingrédients correspondants sont additionnés, et les articles de courses peuvent être cochés.
 
-## Run locally
+## Exécuter localement
 
-1. Install Python 3.10 or newer.
-2. In this folder, create and activate a virtual environment:
+1. Installez Python 3.10 ou une version plus récente.
+2. Dans ce dossier, créez et activez un environnement virtuel :
 
    ```powershell
    python -m venv .venv
    .\.venv\Scripts\Activate.ps1
    ```
 
-3. Install Flask and start the app:
+3. Installez Flask et lancez l’application :
 
    ```powershell
    python -m pip install -r requirements.txt
    python app.py
    ```
 
-4. Keep that terminal window open while you use the app, then open <http://127.0.0.1:5000>.
+4. Gardez cette fenêtre de terminal ouverte pendant que vous utilisez l’application, puis ouvrez <http://127.0.0.1:5000>.
 
-If the page does not load, make sure the `python app.py` command is still running in the terminal. The website is served from your computer and is available only while that process is running. Stop it with `Ctrl+C` when you are finished.
+Si la page ne se charge pas, vérifiez que la commande `python app.py` est toujours en cours d’exécution dans le terminal. Le site est servi depuis votre ordinateur et n’est disponible que pendant l’exécution de ce processus. Appuyez sur `Ctrl+C` pour l’arrêter lorsque vous avez terminé.
 
-Recipes, the ingredient library (including uploaded images), and the weekly list are stored in `instance/groceries.sqlite3`.
+Les recettes, la bibliothèque d’ingrédients (y compris les images téléchargées) et la liste hebdomadaire sont stockées dans `instance/groceries.sqlite3`.
 
-## Add a recipe
+## Ajouter une recette
 
-Open **Add a recipe**, enter its name and serving count, then add one ingredient per line as a quantity followed by an optional unit and the ingredient name:
+Ouvrez **Ajouter une recette**, entrez son nom et le nombre de portions, puis ajoutez un ingrédient par ligne sous la forme d’une quantité suivie d’une unité facultative et du nom de l’ingrédient :
 
 ```text
 100g boeuf
@@ -35,15 +35,15 @@ Open **Add a recipe**, enter its name and serving count, then add one ingredient
 150ml lait
 ```
 
-Units can be written next to the quantity (`100g`) or after a space (`100 g`). Leave the unit out for counted items such as `1 poire`. Existing recipes and entries in the older `quantity | unit | ingredient` format remain supported.
+Les unités peuvent être écrites à côté de la quantité (`100g`) ou après un espace (`100 g`). Laissez l’unité de côté pour les éléments comptés comme `1 poire`. Les recettes existantes et les anciennes entrées au format `quantité | unité | ingrédient` restent prises en charge.
 
-Choose a recipe and set **Servings to cook** to adjust its ingredient quantities proportionally; it defaults to the recipe's serving count. The recipe workspace fills the page while you choose and create recipes. Click **Update my week** to display the shopping list; checking off an item keeps the list open. Use **Edit recipe** on a saved recipe to update its servings, ingredients, or name, or choose **Delete recipe** to remove it permanently. Deleting a recipe also removes it from the current week's plan and refreshes the shopping list; checked items remain checked when the ingredient and unit still match. Ingredients combine when both their names and units match (case-insensitively); different units are kept separate rather than converted.
+Choisissez une recette et réglez **Portions à préparer** pour ajuster proportionnellement les quantités d’ingrédients ; la valeur par défaut correspond au nombre de portions de la recette. L’espace de travail de la recette remplit la page pendant que vous choisissez et créez des recettes. Cliquez sur **Mettre à jour ma semaine** pour afficher la liste de courses ; cocher un élément garde la liste ouverte. Utilisez **Modifier la recette** sur une recette enregistrée pour mettre à jour ses portions, ses ingrédients ou son nom, ou choisissez **Supprimer la recette** pour la retirer définitivement. La suppression d’une recette supprime également cette recette du plan de la semaine en cours et actualise la liste de courses ; les éléments cochés restent cochés lorsque l’ingrédient et l’unité correspondent encore. Les ingrédients sont combinés lorsque leur nom et leur unité correspondent (sans tenir compte de la casse) ; les unités différentes sont conservées séparément plutôt que converties.
 
-Use the shopping list's **Order by** selector to group ingredients by name, recipe, or category. Items shared between recipes remain combined and appear under a heading listing those recipes. On startup, known ingredients in existing recipes are assigned categories from `data/recipe_ingredient_categories.json`; uncategorized ingredients not listed there appear under **Other**.
+Utilisez le sélecteur **Trier par** de la liste de courses pour regrouper les ingrédients par nom, recette ou catégorie. Les éléments partagés entre plusieurs recettes restent combinés et apparaissent sous un titre listant ces recettes. Au démarrage, les ingrédients connus des recettes existantes se voient attribuer des catégories depuis `data/recipe_ingredient_categories.json` ; les ingrédients non catégorisés et absents de ce fichier apparaissent dans **Autre**.
 
-Recipe forms also include a searchable ingredient picker backed by the database. Existing starter ingredients are loaded once from `data/initial_ingredients.json` when the ingredient catalog is empty; ingredients you create are stored in SQLite. Relevant default icons are maintained in `data/ingredient_icons.json`, and uploaded images take precedence over icons. Use **Add an ingredient** to save an ingredient with its category, default quantity and optional unit, and optionally upload a PNG, JPEG, GIF, or WebP image up to 4 MB. The picker uses each ingredient's saved default quantity and unit. Adjust them to fit your recipe, or type any ingredient directly into the list. Common singular/plural aliases in `data/ingredient_aliases.json` are standardized, and repeated lines for the same ingredient and unit in a recipe have their quantities combined.
+Les formulaires de recettes incluent également un sélecteur d’ingrédients consultable et alimenté par la base de données. Les ingrédients de départ existants sont chargés une seule fois depuis `data/initial_ingredients.json` lorsque le catalogue d’ingrédients est vide ; les ingrédients que vous créez sont enregistrés dans SQLite. Les icônes par défaut pertinentes sont conservées dans `data/ingredient_icons.json`, et les images téléchargées ont priorité sur les icônes. Utilisez **Ajouter un ingrédient** pour enregistrer un ingrédient avec sa catégorie, sa quantité par défaut et son unité facultative, et éventuellement téléverser une image PNG, JPEG, GIF ou WebP d’une taille maximale de 4 Mo. Le sélecteur utilise la quantité et l’unité par défaut enregistrées pour chaque ingrédient. Ajustez-les pour votre recette, ou tapez directement n’importe quel ingrédient dans la liste. Les alias singulier/pluriel courants dans `data/ingredient_aliases.json` sont standardisés, et les lignes répétées pour le même ingrédient et la même unité dans une recette ont leurs quantités combinées.
 
-After updating your week, use **Share list** to send the shopping list through your phone's share menu where supported, or copy it to paste into a notes app. **Download .txt** saves a plain-text copy you can transfer to your phone. Both include quantities and checked-off items.
+Après avoir mis à jour votre semaine, utilisez **Partager la liste** pour envoyer la liste de courses via le menu de partage de votre téléphone lorsque la fonctionnalité est prise en charge, ou copiez-la pour la coller dans une application de notes. **Télécharger .txt** enregistre une copie en texte brut que vous pouvez transférer sur votre téléphone. Les deux incluent les quantités et les éléments cochés.
 
 ## Tests
 
@@ -51,4 +51,4 @@ After updating your week, use **Share list** to send the shopping list through y
 python -m unittest discover -s tests
 ```
 
-This starter app is intended for local use and does not include user accounts or production deployment security.
+Cette application de démarrage est destinée à un usage local et n’inclut ni comptes utilisateurs ni sécurité de déploiement en production.
